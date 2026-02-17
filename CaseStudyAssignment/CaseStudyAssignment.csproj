@@ -125,6 +125,7 @@
     <Compile Include="CsvDataComparison\Models\CsvRecord.cs" />
     <Compile Include="CsvDataComparison\Services\CsvComparisonService.cs" />
     <Compile Include="CsvDataComparison\Services\CsvReaderService.cs" />
+    <Compile Include="CsvTest\CsvComparisonAllScenariosTests.cs" />
     <Compile Include="CsvTest\CsvComparisonTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

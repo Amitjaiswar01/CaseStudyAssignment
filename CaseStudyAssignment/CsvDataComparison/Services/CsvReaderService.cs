@@ -12,56 +12,55 @@ namespace CaseStudyAssignment.CsvDataComparison.Services
     /// Reads CSV file in streaming manner.
     /// No external libraries used.
     /// </summary>
-    public class CsvReaderService
-    {
-        /// <summary>
-        /// Reads CSV file and returns dictionary of key -> CsvRecord
-        /// </summary>
-        public Dictionary<string, CsvRecord> ReadCsv(
-            string filePath,
-            List<string> keyColumns)
+        public class CsvReaderService
         {
-            var records = new Dictionary<string, CsvRecord>();
-
-            using (var reader = new StreamReader(filePath))
+            /// <summary>
+            /// Reads CSV file and returns dictionary of key -> CsvRecord
+            /// </summary>
+            public Dictionary<string, CsvRecord> ReadCsv(
+                string filePath,
+                List<string> keyColumns,
+                char delimiter = ',') // default comma
             {
+                var records = new Dictionary<string, CsvRecord>();
 
-                // Read header line
-                string headerLine = reader.ReadLine();
-                if (string.IsNullOrWhiteSpace(headerLine))
-                    throw new Exception("CSV file has no header.");
-
-                string[] headers = headerLine.Split(',');
-
-                while (!reader.EndOfStream)
+                using (var reader = new StreamReader(filePath))
                 {
-                    string line = reader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
+                    string headerLine = reader.ReadLine();
+                    if (string.IsNullOrWhiteSpace(headerLine))
+                        throw new Exception("CSV file has no header.");
 
-                    string[] values = line.Split(',');
+                    string[] headers = headerLine.Split(delimiter);
 
-                    if (values.Length != headers.Length)
-                        throw new Exception("Field count mismatch.");
-
-                    var fieldDict = new Dictionary<string, string>();
-
-                    for (int i = 0; i < headers.Length; i++)
+                    while (!reader.EndOfStream)
                     {
-                        fieldDict[headers[i].Trim()] = values[i].Trim();
+                        string line = reader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(line))
+                            continue;
+
+                        string[] values = line.Split(delimiter);
+
+                        if (values.Length != headers.Length)
+                        {
+                           // Console.WriteLine($"Skipping malformed line: {line}");
+                            continue;
+                        }
+
+                        var fieldDict = new Dictionary<string, string>();
+                        for (int i = 0; i < headers.Length; i++)
+                        {
+                            fieldDict[headers[i].Trim()] = values[i].Trim();
+                        }
+
+                        var record = new CsvRecord(fieldDict);
+                        string key = GenerateKey(record, keyColumns);
+                        records[key] = record;
                     }
-
-                    var record = new CsvRecord(fieldDict);
-
-                    // Generate composite key
-                    string key = GenerateKey(record, keyColumns);
-
-                    records[key] = record;
                 }
+
+                return records;
             }
 
-            return records;
-        }
 
         private string GenerateKey(CsvRecord record, List<string> keyColumns)
         {

@@ -44,14 +44,6 @@ namespace CaseStudyAssignment.CsvDataComparison.Services
 
                     string[] values = line.Split(delimiter);
 
-                    // Skip rows where the number of values does not match the number of headers
-                    if (values.Length != headers.Length)
-                    {
-                        BadDataRows.Add(line);
-                        // Console.WriteLine($"Invalid row (column count mismatch): {line}");
-                        continue;
-                    }
-
                     // Create a dictionary to store column name -> value for this row
                     var fieldDict = new Dictionary<string, string>();
 

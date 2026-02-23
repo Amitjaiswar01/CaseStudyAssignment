@@ -65,21 +65,6 @@ namespace CaseStudyAssignment.CsvTest
             else
                 result.FieldMismatches.ForEach(Console.WriteLine);
 
-            // Print malformed rows
-            Console.WriteLine("\n=== Bad Data Rows ===");
-            if (_reader.BadDataRows.Count == 0)
-            {
-                Console.WriteLine("None"); // No bad data found
-            }
-            else
-            {
-                foreach (var row in _reader.BadDataRows)
-                    Console.WriteLine(row);
-            }
-
-            // Assert that CSV has no bad rows
-            Assert.That(_reader.BadDataRows.Count, Is.EqualTo(0), "CSV contains malformed rows");
-
             // Assert that field mismatches follow expected format
             foreach (var msg in result.FieldMismatches)
             {

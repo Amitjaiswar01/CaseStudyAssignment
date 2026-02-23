@@ -1,0 +1,7 @@
+D,Name,SCOPE,Amount,Status,ExtraColumn,
+1625,BAII,533.9761749,1000,Active,a,
+1626,JOHN,200,500,Active,b,
+1628,LISA,400.5,700,Active,b,
+1625,BAII,533.9761749,1000,Active,,
+1629,david,750,1200,Inactive,b,
+1630,MARK,999,9999,Active,v,

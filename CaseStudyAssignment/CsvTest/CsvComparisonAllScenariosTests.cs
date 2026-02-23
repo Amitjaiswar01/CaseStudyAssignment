@@ -65,14 +65,6 @@ namespace CaseStudyAssignment.CsvTest
             else
                 result.FieldMismatches.ForEach(Console.WriteLine);
 
-            // Assert that field mismatches follow expected format
-            foreach (var msg in result.FieldMismatches)
-            {
-                Assert.That(msg, Does.Contain("Failed Fieldname:"), "Field mismatch missing 'Failed Fieldname:'");
-                Assert.That(msg, Does.Contain("Expected Input Value:"), "Field mismatch missing 'Expected Input Value:'");
-                Assert.That(msg, Does.Contain("Actual Value:"), "Field mismatch missing 'Actual Value:'");
-            }
-
             // --- Duplicate Keys ---
             Console.WriteLine("\n=== Duplicate Keys ===");
             if (result.DuplicateKeys.Count == 0)

@@ -26,13 +26,15 @@ namespace CaseStudyAssignment.CsvDataComparison.Services
             {
                 string headerLine = reader.ReadLine();
 
-                // If the header line is missing or empty, throw an exception
-                if (string.IsNullOrWhiteSpace(headerLine))
-                    throw new Exception("CSV file has no header.");
-
                 // Split the header line into individual column names based on delimiter
                 string[] headers = headerLine.Split(delimiter);
 
+                // If the header line is missing or empty, throw an exception
+                if (headers.Length == 0 || Array.Exists(headers, h => string.IsNullOrWhiteSpace(h)))
+                {
+                    throw new Exception("CSV file has no header.");
+                }
+                
                 string line;
 
                 // Read each line until the end of the file

@@ -11,5 +11,7 @@ namespace CaseStudyAssignment.CsvDataComparison.Models
         public List<string> MissingInActual { get; } = new List<string>();
         public List<string> MissingInExpected { get; } = new List<string>();
         public List<string> FieldMismatches { get; } = new List<string>();
+        public List <string> DuplicateKeys { get;} = new List<string>();
+        public List <string> BadDataRows { get;} = new List<string>();
     }
 }

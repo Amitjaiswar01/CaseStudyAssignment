@@ -2,9 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CaseStudyAssignment.CsvDataComparison.Services
 {
@@ -12,66 +9,63 @@ namespace CaseStudyAssignment.CsvDataComparison.Services
     /// Reads CSV file in streaming manner.
     /// No external libraries used.
     /// </summary>
-        public class CsvReaderService
+    public class CsvReaderService
+    {
+        public List<string> BadDataRows { get; private set; } = new List<string>();
+        /// <summary>
+        /// Reads CSV and returns all records
+        /// </summary>
+        /// <param name="filePath">Path to the CSV file.</param>
+        /// <param name="delimiter">Character used to separate fields (default is comma).</param>
+        /// <returns>List of CsvRecord objects representing each row in the CSV.</returns>
+        public List<CsvRecord> ReadCsv(string filePath, char delimiter = ',')
         {
-            /// <summary>
-            /// Reads CSV file and returns dictionary of key -> CsvRecord
-            /// </summary>
-            public Dictionary<string, CsvRecord> ReadCsv(
-                string filePath,
-                List<string> keyColumns,
-                char delimiter = ',') // default comma
-            {
-                var records = new Dictionary<string, CsvRecord>();
+            var records = new List<CsvRecord>(); // Initialize a list to hold all CSV records
 
-                using (var reader = new StreamReader(filePath))
+            using (var reader = new StreamReader(filePath))
+            {
+                string headerLine = reader.ReadLine();
+
+                // If the header line is missing or empty, throw an exception
+                if (string.IsNullOrWhiteSpace(headerLine))
+                    throw new Exception("CSV file has no header.");
+
+                // Split the header line into individual column names based on delimiter
+                string[] headers = headerLine.Split(delimiter);
+
+                string line;
+
+                // Read each line until the end of the file
+                while ((line = reader.ReadLine()) != null)
                 {
-                    string headerLine = reader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(headerLine))
-                        throw new Exception("CSV file has no header.");
+                    // Skip empty or whitespace-only lines
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
 
-                    string[] headers = headerLine.Split(delimiter);
+                    string[] values = line.Split(delimiter);
 
-                    while (!reader.EndOfStream)
+                    // Skip rows where the number of values does not match the number of headers
+                    if (values.Length != headers.Length)
                     {
-                        string line = reader.ReadLine();
-                        if (string.IsNullOrWhiteSpace(line))
-                            continue;
-
-                        string[] values = line.Split(delimiter);
-
-                        if (values.Length != headers.Length)
-                        {
-                           // Console.WriteLine($"Skipping malformed line: {line}");
-                            continue;
-                        }
-
-                        var fieldDict = new Dictionary<string, string>();
-                        for (int i = 0; i < headers.Length; i++)
-                        {
-                            fieldDict[headers[i].Trim()] = values[i].Trim();
-                        }
-
-                        var record = new CsvRecord(fieldDict);
-                        string key = GenerateKey(record, keyColumns);
-                        records[key] = record;
+                        BadDataRows.Add(line);
+                        // Console.WriteLine($"Invalid row (column count mismatch): {line}");
+                        continue;
                     }
+
+                    // Create a dictionary to store column name -> value for this row
+                    var fieldDict = new Dictionary<string, string>();
+
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        fieldDict[headers[i].Trim()] = values[i].Trim();
+                    }
+
+                    // Create a CsvRecord object for this row and add it to the records list
+                    records.Add(new CsvRecord(fieldDict));
                 }
-
-                return records;
             }
 
-
-        private string GenerateKey(CsvRecord record, List<string> keyColumns)
-        {
-            var keyParts = new List<string>();
-
-            foreach (var column in keyColumns)
-            {
-                keyParts.Add(record.GetValue(column));
-            }
-
-            return string.Join("|", keyParts);
+            return records;
         }
     }
 }

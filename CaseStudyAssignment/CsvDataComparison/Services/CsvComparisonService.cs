@@ -2,9 +2,6 @@
 using CaseStudyAssignment.CsvDataComparison.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CaseStudyAssignment.CsvDataComparison.Services
 {
@@ -14,46 +11,73 @@ namespace CaseStudyAssignment.CsvDataComparison.Services
     public class CsvComparisonService
     {
         public ComparisonResult Compare(
-            Dictionary<string, CsvRecord> expected,
-            Dictionary<string, CsvRecord> actual,
+            List<CsvRecord> expectedRecords,
+            List<CsvRecord> actualRecords,
             CsvComparisonOptions options)
         {
             var result = new ComparisonResult();
 
-            // 1. Missing in Actual
-            foreach (var key in expected.Keys)
+            var expectedDict = new Dictionary<string, CsvRecord>();
+            var actualDict = new Dictionary<string, CsvRecord>();
+
+            // Build Expected dictionary and detect duplicates
+            foreach (var record in expectedRecords)
             {
-                if (!actual.ContainsKey(key))
+                string key = GenerateKey(record, options.KeyColumns);
+
+                if (expectedDict.ContainsKey(key))
                 {
-                    result.MissingInActual.Add(key);
+                    result.DuplicateKeys.Add($"Duplicate in Expected: {key}");
+                    continue;
                 }
+
+                expectedDict[key] = record;
+            }
+
+            // Build Actual dictionary and detect duplicates
+            foreach (var record in actualRecords)
+            {
+                string key = GenerateKey(record, options.KeyColumns);
+
+                if (actualDict.ContainsKey(key))
+                {
+                    result.DuplicateKeys.Add($"Duplicate in Actual: {key}");
+                    continue;
+                }
+
+                actualDict[key] = record;
+            }
+
+            // 1. Missing in Actual
+            foreach (var key in expectedDict.Keys)
+            {
+                if (!actualDict.ContainsKey(key))
+                    result.MissingInActual.Add(key);
             }
 
             // 2. Missing in Expected
-            foreach (var key in actual.Keys)
+            foreach (var key in actualDict.Keys)
             {
-                if (!expected.ContainsKey(key))
-                {
+                if (!expectedDict.ContainsKey(key))
                     result.MissingInExpected.Add(key);
-                }
             }
 
-            // 3. Field level comparison
-            foreach (var key in expected.Keys)
+            // 3. Field-level comparison
+            foreach (var key in expectedDict.Keys)
             {
-                if (!actual.ContainsKey(key))
+                if (!actualDict.ContainsKey(key))
                     continue;
 
-                var expectedRecord = expected[key];
-                var actualRecord = actual[key];
+                var expected = expectedDict[key];
+                var actual = actualDict[key];
 
-                foreach (var field in expectedRecord.Fields.Keys)
+                foreach (var field in expected.Fields.Keys)
                 {
                     if (options.IgnoreColumns.Contains(field))
                         continue;
 
-                    var expectedValue = expectedRecord.GetValue(field);
-                    var actualValue = actualRecord.GetValue(field);
+                    var expectedValue = expected.GetValue(field);
+                    var actualValue = actual.GetValue(field);
 
                     if (!ValuesEqual(expectedValue, actualValue, options))
                     {
@@ -69,6 +93,18 @@ namespace CaseStudyAssignment.CsvDataComparison.Services
             }
 
             return result;
+        }
+
+        private string GenerateKey(CsvRecord record, List<string> keyColumns)
+        {
+            var keyParts = new List<string>();
+
+            foreach (var column in keyColumns)
+            {
+                keyParts.Add(record.GetValue(column));
+            }
+
+            return string.Join("|", keyParts);
         }
 
         private bool ValuesEqual(string expected, string actual, CsvComparisonOptions options)

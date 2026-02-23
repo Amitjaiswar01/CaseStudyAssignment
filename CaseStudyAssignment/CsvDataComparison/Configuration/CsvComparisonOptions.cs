@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CaseStudyAssignment.CsvDataComparison.Configuration
 {
+    //  These three members (KeyColumns, CaseSensitiveComparison, IgnoreColumns) are the properties of CsvComparisonOptions class.
+    //  They’re public, so they can be set by the caller to control how the comparison behaves.
     /// <summary>
     /// Configuration for CSV comparison.
     /// Allows future customization.

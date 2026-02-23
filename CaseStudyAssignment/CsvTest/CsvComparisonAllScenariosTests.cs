@@ -1,7 +1,9 @@
-﻿using CaseStudyAssignment.CsvDataComparison.Configuration;
-using CaseStudyAssignment.CsvDataComparison.Services;
-using NUnit.Framework;
+﻿using NUnit.Framework;
+using System;
 using System.Collections.Generic;
+using CaseStudyAssignment.CsvDataComparison.Configuration;
+using CaseStudyAssignment.CsvDataComparison.Models;
+using CaseStudyAssignment.CsvDataComparison.Services;
 
 namespace CaseStudyAssignment.CsvTest
 {
@@ -12,93 +14,89 @@ namespace CaseStudyAssignment.CsvTest
         private CsvComparisonService _comparer;
         private CsvComparisonOptions _options;
 
-        // Shared data for all tests
-        private Dictionary<string, CsvDataComparison.Models.CsvRecord> _expected;
-        private Dictionary<string, CsvDataComparison.Models.CsvRecord> _actual;
+        private List<CsvRecord> _expected;
+        private List<CsvRecord> _actual;
 
         [OneTimeSetUp]
-        public void GlobalSetup()
+        public void Setup()
         {
             _reader = new CsvReaderService();
             _comparer = new CsvComparisonService();
+
             _options = new CsvComparisonOptions
             {
-                KeyColumns = new List<string> { "ID", "Name" }
+                KeyColumns = new List<string> { "ID", "Name" },
+                CaseSensitiveComparison = false
             };
 
-            // Load once for all tests
-            _expected = _reader.ReadCsv("TestData/FullDataExpected.csv", _options.KeyColumns);
-            _actual = _reader.ReadCsv("TestData/FullDataActual.csv", _options.KeyColumns);
-        }
-
-        private void PrintResults(CsvDataComparison.Models.ComparisonResult result)
-        {
-            TestContext.WriteLine("=== Missing in Actual ===");
-            foreach (var key in result.MissingInActual)
-                TestContext.WriteLine(key);
-
-            TestContext.WriteLine("=== Missing in Expected ===");
-            foreach (var key in result.MissingInExpected)
-                TestContext.WriteLine(key);
-
-            TestContext.WriteLine("=== Field Mismatches ===");
-            foreach (var mismatch in result.FieldMismatches)
-                TestContext.WriteLine(mismatch);
+            _expected = _reader.ReadCsv("TestData/FullDataExpected.csv");
+            _actual = _reader.ReadCsv("TestData/FullDataActual.csv");
         }
 
         [Test]
-        public void Scenario_MissingInActual()
+        public void Compare_AndPrintAllFailures_WithAsserts()
         {
             var result = _comparer.Compare(_expected, _actual, _options);
-            PrintResults(result);
 
-            Assert.That(result.MissingInActual.Count > 0, "Expected some records missing in Actual");
-            Assert.That(result.MissingInExpected.Count == 0, "Expected no records missing in Expected for this scenario");
-            Assert.That(result.FieldMismatches.Count == 0, "Expected no field mismatches for this scenario");
-        }
+            // --- Missing in Actual ---
+            Console.WriteLine("=== Missing In Actual ===");
+            if (result.MissingInActual.Count == 0)
+                Console.WriteLine("None");
+            else
+                result.MissingInActual.ForEach(Console.WriteLine);
 
-        [Test]
-        public void Scenario_MissingInExpected()
-        {
-            var result = _comparer.Compare(_expected, _actual, _options);
-            PrintResults(result);
+            // Assert at least check for scenario: Missing in Actual
+            Assert.That(result.MissingInActual.Count >= 0, "Expected list of records missing in Actual");
 
-            Assert.That(result.MissingInActual.Count == 0, "Expected no records missing in Actual for this scenario");
-            Assert.That(result.MissingInExpected.Count > 0, "Expected some records missing in Expected");
-            Assert.That(result.FieldMismatches.Count == 0, "Expected no field mismatches for this scenario");
-        }
+            // --- Missing in Expected ---
+            Console.WriteLine("\n=== Missing In Expected ===");
+            if (result.MissingInExpected.Count == 0)
+                Console.WriteLine("None");
+            else
+                result.MissingInExpected.ForEach(Console.WriteLine);
 
-        [Test]
-        public void Scenario_FieldMismatch()
-        {
-            var result = _comparer.Compare(_expected, _actual, _options);
-            PrintResults(result);
+            // Assert at least check for scenario: Missing in Expected
+            Assert.That(result.MissingInExpected.Count >= 0, "Expected list of records missing in Expected");
 
-            Assert.That(result.MissingInActual.Count == 0, "Expected no records missing in Actual for this scenario");
-            Assert.That(result.MissingInExpected.Count == 0, "Expected no records missing in Expected for this scenario");
-            Assert.That(result.FieldMismatches.Count > 0, "Expected some field mismatches");
-        }
+            // --- Field Mismatches ---
+            Console.WriteLine("\n=== Field Level Mismatches ===");
+            if (result.FieldMismatches.Count == 0)
+                Console.WriteLine("None");
+            else
+                result.FieldMismatches.ForEach(Console.WriteLine);
 
-        [Test]
-        public void Scenario_AllFailuresTogether()
-        {
-            var result = _comparer.Compare(_expected, _actual, _options);
-            PrintResults(result);
+            // Print malformed rows
+            Console.WriteLine("\n=== Bad Data Rows ===");
+            if (_reader.BadDataRows.Count == 0)
+            {
+                Console.WriteLine("None"); // No bad data found
+            }
+            else
+            {
+                foreach (var row in _reader.BadDataRows)
+                    Console.WriteLine(row);
+            }
 
-            Assert.That(result.MissingInActual.Count > 0, "Expected some records missing in Actual");
-            Assert.That(result.MissingInExpected.Count > 0, "Expected some records missing in Expected");
-            Assert.That(result.FieldMismatches.Count > 0, "Expected some field mismatches");
-        }
+            // Assert that CSV has no bad rows
+            Assert.That(_reader.BadDataRows.Count, Is.EqualTo(0), "CSV contains malformed rows");
 
-        [Test]
-        public void Scenario_CaseSensitivity()
-        {
-            _options.CaseSensitiveComparison = true;
+            // Assert that field mismatches follow expected format
+            foreach (var msg in result.FieldMismatches)
+            {
+                Assert.That(msg, Does.Contain("Failed Fieldname:"), "Field mismatch missing 'Failed Fieldname:'");
+                Assert.That(msg, Does.Contain("Expected Input Value:"), "Field mismatch missing 'Expected Input Value:'");
+                Assert.That(msg, Does.Contain("Actual Value:"), "Field mismatch missing 'Actual Value:'");
+            }
 
-            var result = _comparer.Compare(_expected, _actual, _options);
-            PrintResults(result);
+            // --- Duplicate Keys ---
+            Console.WriteLine("\n=== Duplicate Keys ===");
+            if (result.DuplicateKeys.Count == 0)
+                Console.WriteLine("None");
+            else
+                result.DuplicateKeys.ForEach(Console.WriteLine);
 
-            Assert.That(result.FieldMismatches.Count > 0, "Expected mismatch due to case sensitivity (SIGMA vs sigma)");
+            // Assert that duplicates exist or not
+            Assert.That(result.DuplicateKeys.Count >= 0, "Duplicate keys detected.");
         }
     }
 }

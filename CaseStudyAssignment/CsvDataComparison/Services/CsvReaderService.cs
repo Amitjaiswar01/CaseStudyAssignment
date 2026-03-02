@@ -11,7 +11,6 @@ namespace CaseStudyAssignment.CsvDataComparison.Services
     /// </summary>
     public class CsvReaderService
     {
-        public List<string> BadDataRows { get; private set; } = new List<string>();
         /// <summary>
         /// Reads CSV and returns all records
         /// </summary>
@@ -51,7 +50,14 @@ namespace CaseStudyAssignment.CsvDataComparison.Services
 
                     for (int i = 0; i < headers.Length; i++)
                     {
-                        fieldDict[headers[i].Trim()] = values[i].Trim();
+                        string value = i < values.Length ? values[i].Trim() : "";
+
+                        if (string.IsNullOrWhiteSpace(value) || value.Equals("NULL", StringComparison.OrdinalIgnoreCase))
+                        {
+                            value = null;
+                        }
+
+                        fieldDict[headers[i].Trim()] = value;
                     }
 
                     // Create a CsvRecord object for this row and add it to the records list

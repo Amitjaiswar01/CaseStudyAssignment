@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using CaseStudyAssignment.CsvDataComparison.Configuration;
 using CaseStudyAssignment.CsvDataComparison.Models;
 using CaseStudyAssignment.CsvDataComparison.Services;
+using System.Text.RegularExpressions;
 
 namespace CaseStudyAssignment.CsvTest
 {
@@ -74,6 +75,25 @@ namespace CaseStudyAssignment.CsvTest
 
             // Assert that duplicates exist or not
             Assert.That(result.DuplicateKeys.Count >= 0, "Duplicate keys detected.");
+
+            // --- Row Order Check ---
+            Console.WriteLine("\n=== Row Order Verification ===");
+            bool orderMismatch = false;
+
+            for (int i = 0; i < Math.Min(_expected.Count, _actual.Count); i++)
+            {
+                string expectedKey = string.Join("|", _options.KeyColumns.ConvertAll(c => _expected[i].GetValue(c)));
+                string actualKey = string.Join("|", _options.KeyColumns.ConvertAll(c => _actual[i].GetValue(c)));
+
+                if (expectedKey != actualKey)
+                {
+                    Console.WriteLine($"Row {i + 1} order mismatch: Expected = {expectedKey}, Actual = {actualKey}");
+                    orderMismatch = true;
+                }
+            }
+
+            // Assert row order is correct
+            Assert.That(orderMismatch, Is.True, "CSV row order mismatch detected.");  // for now put the value as true
         }
     }
 }
